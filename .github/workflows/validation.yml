@@ -24,7 +24,7 @@ jobs:
             - name: Display Commit ID
               run: echo ${{secrets.COMMIT_ID}}
             - name: Get Delta
-              run: sfdx sgd:source:delta --to HEAD --from ${{secrets.COMMIT_ID}} --output .
+              run: sfdx sgd:source:delta --to HEAD --from 0a99097ce61a823fbf93bfe86ed1a4b0af6a0c95 --output .
             - name: Display Package.xml
               run: cat package/package.xml
             - name: Validate Source Code
