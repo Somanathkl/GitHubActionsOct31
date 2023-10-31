@@ -24,7 +24,7 @@ jobs:
             - name: Authorise Salesforce Org
               run: sf org:login:sfdx-url --sfdx-url-file authorise -s -a ManideepOrg
             - name: Get Delta
-              run: sf sgd:source:delta --to da508004895106c8af7350cdee799204103b9c8e --from 0a99097ce61a823fbf93bfe86ed1a4b0af6a0c95 --output .
+              run: sf sgd:source:delta --to HEAD --from ${{secrets.COMMIT_ID}} --output .
             - name: Display Package.xml
               run: cat package/package.xml
             - name: Validate Source Code
