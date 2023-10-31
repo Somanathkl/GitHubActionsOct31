@@ -1,6 +1,6 @@
 name: Validation of Deployment
 on: 
-    pull_request:
+    push:
         branches: main
     workflow_dispatch:
 jobs:
@@ -28,4 +28,4 @@ jobs:
             - name: Display Package.xml
               run: cat package/package.xml
             - name: Validate Source Code
-              run: sfdx force:source:deploy -x package/package.xml -u kmanideep@deloitte.com -l ${{secrets.SF_TESTLEVEL}} -c -w 60 --verbose
+              run: sfdx force:source:deploy -x package/package.xml -u kmanideep@deloitte.com -l ${{secrets.SF_TESTLEVEL}} -w 60 --verbose
