@@ -21,8 +21,6 @@ jobs:
               run: echo y | sfdx plugins:install sfdx-git-delta
             - name: Authorise Salesforce Org
               run: sfdx auth:sfdxurl:store -f authorise -s -a ManideepOrg
-            - name: Display Commit ID
-              run: echo ${{secrets.COMMIT_ID}}
             - name: Get Delta
               run: sfdx sgd:source:delta --to HEAD --from 0a99097ce61a823fbf93bfe86ed1a4b0af6a0c95 --output .
             - name: Display Package.xml
