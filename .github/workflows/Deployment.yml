@@ -1,0 +1,31 @@
+name: Validation of Deployment
+on: 
+    push:
+        branches: main
+    workflow_dispatch:
+jobs:
+    Install_Packages:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+              with:
+                fetch-depth: '0'
+            - name: Install NodeJS
+              uses: actions/setup-node@v1
+              with:
+                node-version: 18
+            - name: Install Dependencies
+              run: npm install --global oclif
+            - name: Install Salesforce CLI
+              run: npm install @salesforce/cli --global
+            - name: Install SFDX Delta
+              run: echo y | sf plugins:install sfdx-git-delta
+            - name: Authorise Salesforce Org
+              run: sf org:login:sfdx-url --sfdx-url-file authorise -s -a ManideepOrg
+            - name: Get Delta
+              run: sf sgd:source:delta --to HEAD --from ${{secrets.COMMIT_ID}} --output .
+            - name: Display Package.xml
+              run: cat package/package.xml
+            - name: Validate Source Code
+              run: sfdx force:source:deploy -x package/package.xml -u kmanideep@deloitte.com -l ${{secrets.SF_TESTLEVEL}} -w 60 --verbose
