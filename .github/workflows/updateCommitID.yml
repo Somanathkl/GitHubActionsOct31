@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: ekowcharles/update-github-actions-secret@v1
+        uses: ekowcharles/update-github-actions-secret@0.0.5
     env:
       OWNER: Somanathkl
       REPOSITORY: GitHubActionsOct31
