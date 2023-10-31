@@ -22,9 +22,9 @@ jobs:
             - name: Authorise Salesforce Org
               run: sfdx auth:sfdxurl:store -f authorise -s -a ManideepOrg
             - name: Display Commit ID
-              run: echo ${{github.COMMIT_ID}}
+              run: echo ${{COMMIT_ID}}
             - name: Get Delta
-              run: sfdx sgd:source:delta --to HEAD --from ${{github.COMMIT_ID}} --output .
+              run: sfdx sgd:source:delta --to HEAD --from ${{COMMIT_ID}} --output .
             - name: Display Package.xml
               run: cat package/package.xml
             - name: Validate Source Code
