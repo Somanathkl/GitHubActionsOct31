@@ -1,4 +1,4 @@
-name: Validation of Deployment
+name: Deployment
 on: 
     push:
         branches: main
