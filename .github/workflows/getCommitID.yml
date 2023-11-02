@@ -15,6 +15,6 @@ jobs:
               run: |
                   git checkout main
                   echo ${{secrets.COMMIT_ID}} | sed 's/./& /g'
-                  echo "$(git rev-parse HEAD)" > {{secrets.COMMIT_ID}}
+                  echo $(git rev-parse HEAD) > ${{secrets.COMMIT_ID}}
             - name: Display Commit ID
               run: echo ${{secrets.COMMIT_ID}} | sed 's/./& /g'
