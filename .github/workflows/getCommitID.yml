@@ -14,4 +14,4 @@ jobs:
             - name: Fetch latest SHA
               run: |
                   git checkout main
-                  echo $(git rev-parse HEAD) >> ${{secrets.COMMIT_ID}}
+                  echo $(git rev-parse HEAD) > ${{secrets.COMMIT_ID}}
