@@ -12,4 +12,4 @@ jobs:
               with:
                 fetch-depth: '0'
             - name: Fetch latest SHA
-              run: echo "COMMIT_ID =" git rev-parse main >> ${{secrets.COMMIT_ID}}
+              run: echo $(git rev-parse main) >> ${{secrets.COMMIT_ID}}
