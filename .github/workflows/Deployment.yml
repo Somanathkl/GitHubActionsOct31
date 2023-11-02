@@ -34,4 +34,4 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Fetch latest SHA
-              run: echo ${{env.COMMIT_ID}}
+              run: echo ${{github.COMMIT_ID}}
