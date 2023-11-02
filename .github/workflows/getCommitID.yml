@@ -13,7 +13,7 @@ jobs:
                 fetch-depth: '0'
             - name: Fetch latest SHA
               run: |
-                  echo $(git branch --show-current) >> WorkingBranch
+                  echo $(git branch --show-current) >> ${{WorkingBranch}}
                   git checkout main
                   echo $(git rev-parse HEAD) >> ${{secrets.COMMIT_ID}}
                   git checkout ${{WorkingBranch}}
