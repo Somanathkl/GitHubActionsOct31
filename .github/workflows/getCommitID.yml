@@ -15,6 +15,7 @@ jobs:
               run: |
                   git checkout main
                   echo ${{secrets.COMMIT_ID}} | sed 's/./& /g'
-                  echo "::set-secret name=COMMIT_ID::$(git rev-parse HEAD)"
+                  cat commitID.txt
+                  echo $(git rev-parse HEAD) >commitID.txt
             - name: Display Commit ID
-              run: echo ${{secrets.COMMIT_ID}} | sed 's/./& /g'
+              run: echo $(head -n 1 commitid.txt)
