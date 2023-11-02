@@ -1,5 +1,7 @@
 name: Get Commit ID
 on:
+    pull_request:
+        branches: feature/GetCommitID
     workflow_dispatch:
 jobs:
     Install_Packages:
