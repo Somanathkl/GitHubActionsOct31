@@ -14,7 +14,7 @@ jobs:
             - name: Fetch latest SHA
               run: |
                   git checkout main
-                  echo ${{secrets.COMMIT_ID}} | sed 's/./& /g'
-                  echo "::set-secret name=COMMIT_ID::$(git rev-parse HEAD)"
+                  echo ${{env.COMMIT_ID}}
+                  echo "COMMIT_ID=$(git rev-parse HEAD)" > $COMMIT_ID
             - name: Display Commit ID
-              run: echo ${{secrets.COMMIT_ID}} | sed 's/./& /g'
+              run: echo ${{env.COMMIT_ID}}
