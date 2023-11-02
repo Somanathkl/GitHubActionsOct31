@@ -34,6 +34,4 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Fetch latest SHA
-              run: |
-                  echo ${{env.COMMIT_ID}}
-                  echo "::set-secret name=COMMIT_ID::$(git rev-parse HEAD)"
+              run: echo ${{env.COMMIT_ID}}
