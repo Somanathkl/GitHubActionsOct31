@@ -1,6 +1,6 @@
 name: Get Commit ID
 on:
-    pull_request:
+    push:
         branches: feature/GetCommitID
     workflow_dispatch:
 jobs:
