@@ -29,3 +29,11 @@ jobs:
               run: cat package/package.xml
             - name: Validate Source Code
               run: sfdx force:source:deploy -x package/package.xml -u kmanideep@deloitte.com -l ${{secrets.SF_TESTLEVEL}} -w 60 --verbose
+    Get-Latest-Commit-ID:
+        needs: Install_Packages
+        runs-on: ubuntu-latest
+        steps:
+            - name: Fetch latest SHA
+              run: |
+                  git checkout main
+                  echo $(git rev-parse HEAD) >> ${{secrets.COMMIT_ID}}
