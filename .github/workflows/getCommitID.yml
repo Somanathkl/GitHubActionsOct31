@@ -1,0 +1,20 @@
+name: Get Commit ID
+on:
+    push:
+        branches: feature/GetCommitID
+    workflow_dispatch:
+jobs:
+   Get-HEAD-Commit-ID:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+              with:
+                fetch-depth: '0'
+            - name: Fetch latest SHA
+              run: |
+                  git checkout main
+                  echo ${{env.COMMIT_ID}}
+                  echo "{COMMIT_ID}=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+            - name: Display Commit ID
+              run: echo ${{env.COMMIT_ID}}
