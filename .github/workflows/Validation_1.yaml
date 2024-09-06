@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  setup-environment:
+  SFDX_Package_Prepartaion:
     runs-on: ubuntu-latest
     steps:        
       - name: Set up Node.js
@@ -21,49 +21,35 @@ jobs:
         run: |
           npm install sfdx-cli --global
 
-  delta-package:
-    runs-on: ubuntu-latest
-    needs: setup-environment
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          ref: "${{ github.head_ref }}"
-
-      - name: SF CLI
-        run:
-            npm install @salesforce/cli --global
-
       - name: Get Delta Files
         id: delta
         shell: bash
         run: |
-          git branch
-          echo $(git diff --name-only --diff-filter=d origin/main HEAD | grep 'force-app' > delta-salesforce.txt)
-          echo $(git diff --name-only --diff-filter=D origin/main HEAD | grep 'force-app' > delta-destructive-sf.txt)
-      
+            git branch
+            echo $(git diff --name-only --diff-filter=d origin/main HEAD | grep 'force-app' > delta-salesforce.txt)
+            echo $(git diff --name-only --diff-filter=D origin/main HEAD | grep 'force-app' > delta-destructive-sf.txt)
+
       - name: Generate Delta Package
         run: |
-          sh scripts/Shell/deltaPackage.sh
+            sh scripts/Shell/deltaPackage.sh
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: sf-package
-          path: package/*
+            name: sf-package
+            path: package/*
       - name: Display Delta Package
         run: |
-          cat package/package.xml
-        continue-on-error: true
+            cat package/package.xml
+            continue-on-error: true
 
   validate-pull-request:
+    name: Validation/Deployment
+    needs: SFDX_Package_Prepartaion
     runs-on: ubuntu-latest
-    needs: delta-package
     if: github.event_name == 'pull_request'
     steps:
-
-      - name: SF CLI
+      - name: Install SF CLI
         run:
             npm install @salesforce/cli --global
       - name: Authenticate with DevHub (CI org)
@@ -85,7 +71,7 @@ jobs:
   deploy-on-merge:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: setup-environment
+    needs: validate-pull-request
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
