@@ -40,13 +40,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          ref: "${{ github.head_ref }}"
+          ref: "${{ github.base_ref }}"
 
       - name: Get Delta Files
         id: delta
         run: |
-          git diff --name-only --diff-filter=d main HEAD | grep 'force-app' > delta-salesforce.txt
-          git diff --name-only --diff-filter=D main HEAD | grep 'force-app' > delta-destructive-sf.txt
+          TARGET_BRANCH="${{ github.base_ref }}"
+          git diff --name-only --diff-filter=d $TARGET_BRANCH HEAD | grep 'force-app' > delta-salesforce.txt
+          git diff --name-only --diff-filter=D $TARGET_BRANCH HEAD | grep 'force-app' > delta-destructive-sf.txt
       
       - name: Generate Delta Package
         run: |
