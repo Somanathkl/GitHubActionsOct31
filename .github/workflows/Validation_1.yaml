@@ -46,39 +46,6 @@ jobs:
       - name: Generate Delta Package
         run: |
           sh scripts/Shell/deltaPackage.sh
-      
-      - name: Checkout Target Branch
-        uses: actions/checkout@v3
-        with:
-          ref: "${{ github.base_ref }}"
-          path: TargetBranchPath
-
-      - name: Generate Destructive Package
-        run: |
-          Destination=PRFilesDestructive
-          if [ ! -d $Destination ];
-          then
-              mkdir $Destination
-          fi
-          IFS=''
-          while read -r line; do
-            temp=$(echo $line | grep "objectTranslations")
-            if [[ ! -z $temp ]]
-            then
-                flag=1
-            else
-                flag=0
-            fi
-            if [[ $flag -eq 1 ]]; then
-              newpath=$(echo $line | sed 's/\/[^/]*$//')
-              folder=$(echo $line | awk -F/ '{print $(NF-1)}')
-              newpath=$newpath"/"$folder".objectTranslation-meta.xml"
-              cp --parents $newpath $Destination
-            fi
-            cp --parents TargetBranchPath/$line $Destination
-          done < "delta-destructive-sf.txt"
-          echo "Building Destructive Package.xml"
-          sf project generate manifest --source-dir "$Destination/force-app/main/default" --output-dir destructiveChanges/
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
@@ -95,6 +62,10 @@ jobs:
     needs: delta-package
     if: github.event_name == 'pull_request'
     steps:
+
+      - name: SF CLI
+        run:
+            npm install @salesforce/cli --global
       - name: Authenticate with DevHub (CI org)
         run: |
           SFDX_AUTH_URL="force://PlatformCLI::5Aep861sDdjizbO.v6wWFLlMMdrS7H5xSuq2_Zr1WIl43Eqn75jBd0u8AhM2HjFXu08OphqB5YYim2bSHhaoKXV@deloittecom78-dev-ed.develop.my.salesforce.com"
