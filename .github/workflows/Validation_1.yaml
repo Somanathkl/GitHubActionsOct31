@@ -26,6 +26,18 @@ jobs:
             fetch-depth: 0
             ref: "${{ github.head_ref }}"
 
+      - name: Get Source and Target Branch names
+        run: |
+          echo TARGET_BRANCH=${{ github.base_ref }} >> $GITHUB_ENV
+          echo SOURCE_BRANCH=${{ github.head_ref }} >> $GITHUB_ENV
+      
+      - name: Checkout TARGET BRANCH
+        uses: actions/checkout@v3
+        with:
+            fetch-depth: 0
+            ref: "${{ github.base_ref }}"
+            path: TargetBranchPath
+
       - name: Get Delta Files for PR
         if: github.event_name == 'pull_request'
         run: |
@@ -41,6 +53,7 @@ jobs:
       - name: Generate Delta Package
         run: |
             sh scripts/Shell/deltaPackage.sh
+            sh scripts/Shell/destructiveChanges.sh "TargetBranchPath"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
@@ -49,7 +62,10 @@ jobs:
             path: package/*
       - name: Display Delta Package
         run: |
+            echo "--------------Package XML------------------"
             cat package/package.xml
+            echo "--------------Destructive Changes XML------------------"
+            cat package/destructiveChanges.xml
 
   SF-VALIDATION-DEPLOYMENT:
     name: Validation/Deployment
@@ -78,10 +94,10 @@ jobs:
       - name: Validate for Pull Request
         if: github.event_name == 'pull_request'
         run: |
-          sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com"
+          sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com" --post-destructive-changes package/destructiveChanges.xml
 
       - name:  Deploy-on-merge
         if: github.event_name == 'push'
         run: |
-            sf project deploy start -x package/package.xml -l NoTestRun --target-org "lsomanath12@deloitte.com"
+            sf project deploy start -x package/package.xml -l NoTestRun --target-org "lsomanath12@deloitte.com" --post-destructive-changes package/destructiveChanges.xml
 
