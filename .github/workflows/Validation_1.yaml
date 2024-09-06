@@ -1,0 +1,162 @@
+name: Salesforce CI/CD Workflow
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: 'main'
+  push:
+    branches:
+      - main
+
+jobs:
+  setup-environment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: "${{ github.head_ref }}"
+        
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install sfdx-cli --global
+          sfdx --version
+
+      - name: Install Salesforce CLI Scanner
+        run: |
+          sfdx plugins:install @salesforce/sfdx-scanner
+          sfdx scanner:run --help
+
+      - name: Authenticate with DevHub (CI org)
+        run: |
+          SFDX_AUTH_URL="force://PlatformCLI::5Aep861sDdjizbO.v6wWFLlMMdrS7H5xSuq2_Zr1WIl43Eqn75jBd0u8AhM2HjFXu08OphqB5YYim2bSHhaoKXV@deloittecom78-dev-ed.develop.my.salesforce.com"
+          echo $SFDX_AUTH_URL > auth-url.txt
+          sfdx auth:sfdxurl:store -f auth-url.txt --setdefaultdevhubusername --noprompt
+
+  delta-package:
+    runs-on: ubuntu-latest
+    needs: setup-environment
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: "${{ github.head_ref }}"
+
+      - name: Get Delta Files
+        id: delta
+        run: |
+          git fetch origin main
+          git diff --name-only --diff-filter=d origin/main HEAD | grep 'force-app' > delta-salesforce.txt
+          git diff --name-only --diff-filter=D origin/main HEAD | grep 'force-app' > delta-destructive-sf.txt
+      
+      - name: Generate Delta Package
+        run: |
+          Destination=PRFiles
+          if [ ! -d 'PRFiles' ];
+          then
+              mkdir $Destination
+          fi
+          IFS=''
+          while read -r line; do
+            temp=$(echo $line | grep "objectTranslations")
+            if [[ ! -z $temp ]]
+            then
+                flag=1
+            else
+                flag=0
+            fi
+            if [[ $flag -eq 1 ]]; then
+              newpath=$(echo $line | sed 's/\/[^/]*$//')
+              folder=$(echo $line | awk -F/ '{print $(NF-1)}')
+              newpath=$newpath"/"$folder".objectTranslation-meta.xml"
+              cp --parents $newpath $Destination
+            fi
+            cp --parents $line $Destination
+          done < "delta-salesforce.txt"
+          echo "Building Package.xml"
+          sf project generate manifest --source-dir "$Destination/force-app/main/default" --output-dir package/
+      
+      - name: Checkout Target Branch
+        uses: actions/checkout@v3
+        with:
+          ref: "${{ github.base_ref }}"
+          path: TargetBranchPath
+
+      - name: Generate Destructive Package
+        run: |
+          Destination=PRFilesDestructive
+          if [ ! -d $Destination ];
+          then
+              mkdir $Destination
+          fi
+          IFS=''
+          while read -r line; do
+            temp=$(echo $line | grep "objectTranslations")
+            if [[ ! -z $temp ]]
+            then
+                flag=1
+            else
+                flag=0
+            fi
+            if [[ $flag -eq 1 ]]; then
+              newpath=$(echo $line | sed 's/\/[^/]*$//')
+              folder=$(echo $line | awk -F/ '{print $(NF-1)}')
+              newpath=$newpath"/"$folder".objectTranslation-meta.xml"
+              cp --parents $newpath $Destination
+            fi
+            cp --parents TargetBranchPath/$line $Destination
+          done < "delta-destructive-sf.txt"
+          echo "Building Destructive Package.xml"
+          sf project generate manifest --source-dir "$Destination/force-app/main/default" --output-dir destructiveChanges/
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: sf-package
+          path: package/*
+      - name: Display Delta Package
+        run: |
+          cat package/package.xml
+        continue-on-error: true
+
+  validate-pull-request:
+    runs-on: ubuntu-latest
+    needs: delta-package
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: sf-package
+          path: package/
+
+      - name: Run SFDX validation
+        run: |
+          sfdx force:source:deploy -x package/package.xml --checkonly --targetusername ${{ secrets.SF_USERNAME }}
+
+  deploy-on-merge:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: setup-environment
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Download Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: sf-package
+          path: package/
+
+      - name: Deploy to Salesforce
+        run: |
+          sfdx force:source:deploy -x package/package.xml --targetusername ${{ secrets.SF_USERNAME }}
+
