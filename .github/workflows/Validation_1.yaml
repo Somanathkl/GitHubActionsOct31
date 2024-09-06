@@ -51,7 +51,6 @@ jobs:
     name: Validation/Deployment
     needs: SFDX_Package_Prepartaion
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v3
         with:
@@ -73,6 +72,7 @@ jobs:
           path: package/
 
       - name: Run SFDX validation
+        if: github.event_name == 'pull_request'
         run: |
           sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com"
 
