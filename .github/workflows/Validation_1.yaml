@@ -27,11 +27,6 @@ jobs:
           npm install sfdx-cli --global
           sfdx --version
 
-      - name: Install Salesforce CLI Scanner
-        run: |
-          sfdx plugins:install @salesforce/sfdx-scanner
-          sfdx scanner:run --help
-
       - name: Authenticate with DevHub (CI org)
         run: |
           SFDX_AUTH_URL="force://PlatformCLI::5Aep861sDdjizbO.v6wWFLlMMdrS7H5xSuq2_Zr1WIl43Eqn75jBd0u8AhM2HjFXu08OphqB5YYim2bSHhaoKXV@deloittecom78-dev-ed.develop.my.salesforce.com"
