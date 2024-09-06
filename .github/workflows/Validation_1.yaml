@@ -51,14 +51,15 @@ jobs:
     name: Validation/Deployment
     needs: SFDX_Package_Prepartaion
     runs-on: ubuntu-latest
-    container:
-      image: salesforce/salesforcedx:latest-full
-      options: '-u 0:0'
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+      - name: Install Salesforce CLI
+        run: |
+            npm install @salesforce/cli --global
+
       - name: Authenticate with DevHub (CI org)
         run: |
           SFDX_AUTH_URL="force://PlatformCLI::5Aep861sDdjizbO.v6wWFLlMMdrS7H5xSuq2_Zr1WIl43Eqn75jBd0u8AhM2HjFXu08OphqB5YYim2bSHhaoKXV@deloittecom78-dev-ed.develop.my.salesforce.com"
