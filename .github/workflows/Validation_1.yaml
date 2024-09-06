@@ -74,25 +74,10 @@ jobs:
 
       - name: Run SFDX validation
         run: |
-          echo $(pwd)
-          ls
           sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com"
 
-  deploy-on-merge:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: validate-pull-request
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      
-      - name: Download Artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: sf-package
-          path: package/
-
-      - name: Deploy to Salesforce
+      - name:  Deploy-on-merge
+        if: github.event_name == 'push'
         run: |
-          sfdx force:source:deploy -x package/package.xml --targetusername ${{ secrets.SF_USERNAME }}
+            sf project deploy start -x package/package.xml -l NoTestRun --target-org "lsomanath12@deloitte.com"
 
