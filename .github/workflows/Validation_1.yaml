@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  SFDX_Package_Prepartaion:
+  SF-Package-Prepartaion:
     runs-on: ubuntu-latest
     steps:        
       - name: Set up Node.js
@@ -51,11 +51,10 @@ jobs:
         run: |
             cat package/package.xml
 
-  validate-pull-request:
+  SF-VALIDATION-DEPLOYMENT:
     name: Validation/Deployment
-    needs: SFDX_Package_Prepartaion
+    needs: SF-Package-Prepartaion
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v3
         with:
