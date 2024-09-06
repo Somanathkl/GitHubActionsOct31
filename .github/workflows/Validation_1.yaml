@@ -70,7 +70,8 @@ jobs:
 
       - name: Run SFDX validation
         run: |
-          echo $(pwd) 
+          echo $(pwd)
+          ls
           sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com"
 
   deploy-on-merge:
