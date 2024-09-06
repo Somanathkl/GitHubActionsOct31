@@ -19,7 +19,13 @@ jobs:
 
       - name: Install Salesforce CLI
         run: |
-          npm install sfdx-cli --global
+          npm install @salesforce/cli --global
+    
+      - name: Checkout GitHub
+        uses: actions/checkout@v3
+        with:
+            fetch-depth: 0
+            ref: "${{ github.head_ref }}"
 
       - name: Get Delta Files
         id: delta
