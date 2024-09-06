@@ -47,9 +47,8 @@ jobs:
       - name: Get Delta Files
         id: delta
         run: |
-          TARGET_BRANCH="${{ github.base_ref }}"
-          git diff --name-only --diff-filter=d $TARGET_BRANCH HEAD | grep 'force-app' > delta-salesforce.txt
-          git diff --name-only --diff-filter=D $TARGET_BRANCH HEAD | grep 'force-app' > delta-destructive-sf.txt
+          git diff --name-only --diff-filter=d origin/main HEAD | grep 'force-app' > delta-salesforce.txt
+          git diff --name-only --diff-filter=D origin/main HEAD | grep 'force-app' > delta-destructive-sf.txt
       
       - name: Generate Delta Package
         run: |
