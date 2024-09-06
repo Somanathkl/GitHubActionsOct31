@@ -47,7 +47,6 @@ jobs:
       - name: Display Delta Package
         run: |
             cat package/package.xml
-            continue-on-error: true
 
   validate-pull-request:
     name: Validation/Deployment
