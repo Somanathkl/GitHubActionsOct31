@@ -31,7 +31,6 @@ jobs:
         id: delta
         shell: bash
         run: |
-            git branch
             echo $(git diff --name-only --diff-filter=d origin/main HEAD | grep 'force-app' > delta-salesforce.txt)
             echo $(git diff --name-only --diff-filter=D origin/main HEAD | grep 'force-app' > delta-destructive-sf.txt)
 
@@ -71,8 +70,7 @@ jobs:
 
       - name: Run SFDX validation
         run: |
-          sf project deploy start -x package/package.xml -l NoTestRun --dry-run
-          #sfdx force:source:deploy -x package/package.xml --checkonly --targetusername "lsomanath12@deloitte.com"
+          sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com"
 
   deploy-on-merge:
     runs-on: ubuntu-latest
