@@ -1,7 +1,7 @@
 name: Validation of Deployment
 on: 
     pull_request:
-        branches: Test
+        branches: main
     workflow_dispatch:
 jobs:
     Install_Packages:
