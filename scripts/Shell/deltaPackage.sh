@@ -21,4 +21,4 @@ fi
 cp --parents $line $Destination
 done < "delta-salesforce.txt"
 echo "Building Package.xml"
-sfdx force:source:manifest:create --source-dir "$Destination/force-app/main/default" --output-dir package/
+sf project generate manifest --source-dir "$Destination/force-app/main/default" --output-dir package/
