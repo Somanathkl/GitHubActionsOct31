@@ -15,6 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
+          fetch-depth: 0
           ref: "${{ github.head_ref }}"
         
       - name: Set up Node.js
@@ -40,15 +41,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
+          fetch-depth: 0
           ref: "${{ github.base_ref }}"
 
       - name: Get Delta Files
         id: delta
         run: |
           TARGET_BRANCH="${{ github.base_ref }}"
-          echo "TARGET_BRANCH=${{ github.base_ref }}" >> $GITHUB_ENV
-          git diff --name-only --diff-filter=d origin/${{ env.TARGET_BRANCH }} HEAD | grep 'force-app' > delta-salesforce.txt
-          git diff --name-only --diff-filter=D origin/${{ env.TARGET_BRANCH }} HEAD | grep 'force-app' > delta-destructive-sf.txt
+          git diff --name-only --diff-filter=d $TARGET_BRANCH HEAD | grep 'force-app' > delta-salesforce.txt
+          git diff --name-only --diff-filter=D $TARGET_BRANCH HEAD | grep 'force-app' > delta-destructive-sf.txt
       
       - name: Generate Delta Package
         run: |
@@ -127,6 +128,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+            fetch-depth: 0
 
       - name: Download Artifact
         uses: actions/download-artifact@v2
