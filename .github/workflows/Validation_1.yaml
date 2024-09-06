@@ -45,8 +45,8 @@ jobs:
       - name: Get Delta Files
         id: delta
         run: |
-          git diff --name-only --diff-filter=d origin/main HEAD | grep 'force-app' > delta-salesforce.txt
-          git diff --name-only --diff-filter=D origin/main HEAD | grep 'force-app' > delta-destructive-sf.txt
+          git diff --name-only --diff-filter=d main HEAD | grep 'force-app' > delta-salesforce.txt
+          git diff --name-only --diff-filter=D main HEAD | grep 'force-app' > delta-destructive-sf.txt
       
       - name: Generate Delta Package
         run: |
