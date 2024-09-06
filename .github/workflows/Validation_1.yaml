@@ -45,7 +45,6 @@ jobs:
       - name: Get Delta Files
         id: delta
         run: |
-          git fetch origin main
           git diff --name-only --diff-filter=d origin/main HEAD | grep 'force-app' > delta-salesforce.txt
           git diff --name-only --diff-filter=D origin/main HEAD | grep 'force-app' > delta-destructive-sf.txt
       
