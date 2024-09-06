@@ -1,0 +1,87 @@
+name: Salesforce CI/CD Workflow
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  push:
+    branches:
+      - main
+
+jobs:
+  SFDX_Package_Prepartaion:
+    runs-on: ubuntu-latest
+    steps:        
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install @salesforce/cli --global
+    
+      - name: Checkout GitHub
+        uses: actions/checkout@v3
+        with:
+            fetch-depth: 0
+            ref: "${{ github.head_ref }}"
+
+      - name: Get Delta Files for PR
+        if: github.event_name == 'pull_request'
+        run: |
+            echo $(git diff --name-only --diff-filter=d origin/main HEAD | grep 'force-app' > delta-salesforce.txt)
+            echo $(git diff --name-only --diff-filter=D origin/main HEAD | grep 'force-app' > delta-destructive-sf.txt)
+
+      - name: Get Delta Files for Merge
+        if: github.event_name != 'pull_request'
+        run: |
+            echo $(git diff --name-only --diff-filter=d HEAD^ HEAD | grep 'force-app' > delta-salesforce.txt)
+            echo $(git diff --name-only --diff-filter=D HEAD^ HEAD | grep 'force-app' > delta-destructive-sf.txt)
+
+      - name: Generate Delta Package
+        run: |
+            sh scripts/Shell/deltaPackage.sh
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+            name: sf-package
+            path: package/*
+      - name: Display Delta Package
+        run: |
+            cat package/package.xml
+
+  validate-pull-request:
+    name: Validation/Deployment
+    needs: SFDX_Package_Prepartaion
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Install Salesforce CLI
+        run: |
+            npm install @salesforce/cli --global
+
+      - name: Authenticate with DevHub (CI org)
+        run: |
+          SFDX_AUTH_URL="force://PlatformCLI::5Aep861sDdjizbO.v6wWFLlMMdrS7H5xSuq2_Zr1WIl43Eqn75jBd0u8AhM2HjFXu08OphqB5YYim2bSHhaoKXV@deloittecom78-dev-ed.develop.my.salesforce.com"
+          echo $SFDX_AUTH_URL > auth-url.txt
+          sf org login sfdx-url --sfdx-url-file auth-url.txt
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: sf-package
+          path: package/
+
+      - name: Run SFDX validation
+        run: |
+          sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com"
+
+      - name:  Deploy-on-merge
+        if: github.event_name == 'push'
+        run: |
+            sf project deploy start -x package/package.xml -l NoTestRun --target-org "lsomanath12@deloitte.com"
+

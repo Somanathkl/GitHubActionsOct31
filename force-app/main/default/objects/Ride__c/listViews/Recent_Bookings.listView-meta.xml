@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Recent_Bookings</fullName>
+    <columns>NAME</columns>
+    <columns>Contact__c</columns>
+    <columns>Pick_Up__c</columns>
+    <columns>Drop__c</columns>
+    <columns>Driver__c</columns>
+    <columns>Distance__c</columns>
+    <columns>Vehicle_Type__c</columns>
+    <columns>Amount__c</columns>
+    <filterScope>ScopingRule</filterScope>
+    <filters>
+        <field>CREATED_DATE</field>
+        <operation>equals</operation>
+        <value>TODAY</value>
+    </filters>
+    <label>Recent Bookings</label>
+</ListView>
