@@ -19,7 +19,7 @@ jobs:
 
       - name: Install Salesforce CLI
         run: |
-          npm install @salesforce/cli --global
+          npm install sfdx-cli --global
 
   delta-package:
     runs-on: ubuntu-latest
