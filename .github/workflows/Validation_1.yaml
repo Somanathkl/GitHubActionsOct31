@@ -11,13 +11,7 @@ on:
 jobs:
   setup-environment:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          ref: "${{ github.head_ref }}"
-        
+    steps:        
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
@@ -25,14 +19,7 @@ jobs:
 
       - name: Install Salesforce CLI
         run: |
-          npm install sfdx-cli --global
-          sfdx --version
-
-      - name: Authenticate with DevHub (CI org)
-        run: |
-          SFDX_AUTH_URL="force://PlatformCLI::5Aep861sDdjizbO.v6wWFLlMMdrS7H5xSuq2_Zr1WIl43Eqn75jBd0u8AhM2HjFXu08OphqB5YYim2bSHhaoKXV@deloittecom78-dev-ed.develop.my.salesforce.com"
-          echo $SFDX_AUTH_URL > auth-url.txt
-          sfdx auth:sfdxurl:store -f auth-url.txt --setdefaultdevhubusername --noprompt
+          npm install @salesforce/cli --global
 
   delta-package:
     runs-on: ubuntu-latest
@@ -46,7 +33,9 @@ jobs:
 
       - name: Get Delta Files
         id: delta
+        shell: bash
         run: |
+          git branch
           git diff --name-only --diff-filter=d origin/main HEAD | grep 'force-app' > delta-salesforce.txt
           git diff --name-only --diff-filter=D origin/main HEAD | grep 'force-app' > delta-destructive-sf.txt
       
@@ -125,10 +114,11 @@ jobs:
     needs: delta-package
     if: github.event_name == 'pull_request'
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-            fetch-depth: 0
+      - name: Authenticate with DevHub (CI org)
+        run: |
+          SFDX_AUTH_URL="force://PlatformCLI::5Aep861sDdjizbO.v6wWFLlMMdrS7H5xSuq2_Zr1WIl43Eqn75jBd0u8AhM2HjFXu08OphqB5YYim2bSHhaoKXV@deloittecom78-dev-ed.develop.my.salesforce.com"
+          echo $SFDX_AUTH_URL > auth-url.txt
+          sfdx auth:sfdxurl:store -f auth-url.txt --setdefaultdevhubusername --noprompt
 
       - name: Download Artifact
         uses: actions/download-artifact@v2
@@ -138,7 +128,7 @@ jobs:
 
       - name: Run SFDX validation
         run: |
-          sfdx force:source:deploy -x package/package.xml --checkonly --targetusername ${{ secrets.SF_USERNAME }}
+          sfdx force:source:deploy -x package/package.xml --checkonly --targetusername "lsomanath12@deloitte.com"
 
   deploy-on-merge:
     runs-on: ubuntu-latest
