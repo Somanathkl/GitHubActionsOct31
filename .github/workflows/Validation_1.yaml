@@ -52,6 +52,9 @@ jobs:
     name: Validation/Deployment
     needs: SFDX_Package_Prepartaion
     runs-on: ubuntu-latest
+    container:
+      image: salesforce/salesforcedx:latest-full
+      options: '-u 0:0'
     if: github.event_name == 'pull_request'
     steps:
       - name: Install SF CLI
@@ -61,7 +64,7 @@ jobs:
         run: |
           SFDX_AUTH_URL="force://PlatformCLI::5Aep861sDdjizbO.v6wWFLlMMdrS7H5xSuq2_Zr1WIl43Eqn75jBd0u8AhM2HjFXu08OphqB5YYim2bSHhaoKXV@deloittecom78-dev-ed.develop.my.salesforce.com"
           echo $SFDX_AUTH_URL > auth-url.txt
-          sfdx auth:sfdxurl:store -f auth-url.txt --setdefaultdevhubusername --noprompt
+          sf org login sfdx-url --sfdx-url-file auth-url.txt
 
       - name: Download Artifact
         uses: actions/download-artifact@v2
@@ -71,7 +74,8 @@ jobs:
 
       - name: Run SFDX validation
         run: |
-          sfdx force:source:deploy -x package/package.xml --checkonly --targetusername "lsomanath12@deloitte.com"
+          sf project deploy start -x package/package.xml -l NoTestRun --dry-run
+          #sfdx force:source:deploy -x package/package.xml --checkonly --targetusername "lsomanath12@deloitte.com"
 
   deploy-on-merge:
     runs-on: ubuntu-latest
