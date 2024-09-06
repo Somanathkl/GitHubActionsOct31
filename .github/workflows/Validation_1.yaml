@@ -36,8 +36,8 @@ jobs:
         shell: bash
         run: |
           git branch
-          git diff --name-only --diff-filter=d origin/main HEAD | grep 'force-app' > delta-salesforce.txt
-          git diff --name-only --diff-filter=D origin/main HEAD | grep 'force-app' > delta-destructive-sf.txt
+          echo $(git diff --name-only --diff-filter=d origin/main HEAD | grep 'force-app' > delta-salesforce.txt)
+          echo $(git diff --name-only --diff-filter=D origin/main HEAD | grep 'force-app' > delta-destructive-sf.txt)
       
       - name: Generate Delta Package
         run: |
