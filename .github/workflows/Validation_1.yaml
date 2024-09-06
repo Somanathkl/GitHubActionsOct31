@@ -75,7 +75,8 @@ jobs:
           name: sf-package
           path: package/
 
-      - name: Run SFDX validation
+      - name: Validate for Pull Request
+        if: github.event_name == 'pull_request'
         run: |
           sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com"
 
