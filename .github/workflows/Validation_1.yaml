@@ -53,8 +53,10 @@ jobs:
       - name: Generate Delta Package
         run: |
             sh scripts/Shell/deltaPackage.sh
-            if: github.event_name == 'pull_request'
-              sh scripts/Shell/destructiveChanges.sh "TargetBranchPath"
+      - name: Destructive for PR
+        if: github.event_name == 'pull_request'
+        run: |
+          sh scripts/Shell/destructiveChanges.sh "TargetBranchPath"
       - name: Generate Destructive Delta for Merge PR
         if: github.event_name != 'pull_request'
         run: |
