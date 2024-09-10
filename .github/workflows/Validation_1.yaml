@@ -55,9 +55,10 @@ jobs:
             sh scripts/Shell/deltaPackage.sh
             if: github.event_name == 'pull_request'
               sh scripts/Shell/destructiveChanges.sh "TargetBranchPath"
-            if: github.event_name != 'pull_request'
-            run: |
-                sh destructiveMergePR.sh
+      - name: Generate Destructive Delta for Merge PR
+        if: github.event_name != 'pull_request'
+        run: |
+            sh destructiveMergePR.sh
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
