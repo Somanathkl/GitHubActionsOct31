@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   SF-Package-Prepartaion:
@@ -53,10 +54,29 @@ jobs:
       - name: Generate Delta Package
         run: |
             sh scripts/Shell/deltaPackage.sh
-            sh scripts/Shell/destructiveChanges.sh "TargetBranchPath"
+            cat package/package.xml
+      - name: Destructive for PR
+        if: github.event_name == 'pull_request'
+        run: |
+          sh scripts/Shell/destructiveChanges.sh "TargetBranchPath"
+      - name: Create Destructive Branch
+        if: github.event_name != 'pull_request'
+        run: |
+            sh scripts/Shell/CreateBranch.sh
+      - name: Checkout Destructive Branch
+        if: github.event_name != 'pull_request'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: DestructiveBranch12
+          path: DestructiveMerge
+      - name: Generate Destructive Delta for Merge PR
+        if: github.event_name != 'pull_request'
+        run:
+            sh scripts/Shell/destructiveMergePR.sh "DestructiveMerge"
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
             name: sf-package
             path: package/*
@@ -86,7 +106,7 @@ jobs:
           sf org login sfdx-url --sfdx-url-file auth-url.txt
 
       - name: Download Artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: sf-package
           path: package/
