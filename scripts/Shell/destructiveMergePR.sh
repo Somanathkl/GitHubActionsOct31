@@ -1,3 +1,9 @@
+count=$(gh pr view 23 --json commits | jq -r '.commits[] | "commit "+.oid' | grep -c "commit")
+echo $count
+count=$((count+1))
+echo $count
+commit=$(git log -n $count --skip 1 --pretty=format:"%H" | tail -1)
+echo $commit
 Destination=DestructivePRFilesMerge
 TargetBranchPath=$1
 if [ ! -d $Destination ];
