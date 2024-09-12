@@ -1,10 +1,4 @@
-count=$(gh pr view 24 --json commits | jq -r '.commits[] | "commit "+.oid' | grep -c "commit")
-echo $count
-count=$((count+1))
-echo $count
-commit=$(git log -n $count --skip 1 --pretty=format:"%H" | tail -1)
-echo $commit
-Destination=DestructivePRFiles
+Destination=DestructivePRFilesMerge
 TargetBranchPath=$1
 if [ ! -d $Destination ];
 then
@@ -23,3 +17,5 @@ mv package.xml destructiveChanges.xml
 cd ..
 cd ..
 mv $Destination/package/destructiveChanges.xml package/ 
+git branch -d DestructiveBranch12
+git push origin -d DestructiveBranch12
