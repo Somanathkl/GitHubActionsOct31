@@ -3,7 +3,7 @@
     <fullName>ARBT_Oct18_Text__c</fullName>
     <externalId>false</externalId>
     <label>ARBT_Oct18_Text</label>
-    <length>25</length>
+    <length>15</length>
     <required>false</required>
     <trackFeedHistory>false</trackFeedHistory>
     <type>Text</type>
