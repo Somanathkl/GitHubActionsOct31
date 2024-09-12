@@ -1,0 +1,22 @@
+name: Salesforce CI/CD Workflow
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  SF-Package-Prepartaion:
+    runs-on: ubuntu-latest
+    steps:    
+    - name: Checkout GitHub
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        ref: "${{ github.head_ref }}"
+    - name: Get Head Commit Message
+      run: |
+        echo ${{ github. event. head_commit. message }}
