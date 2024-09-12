@@ -1,4 +1,4 @@
-count=$(gh pr view 23 --json commits | jq -r '.commits[] | "commit "+.oid' | grep -c "commit")
+count=$(gh pr view 24 --json commits | jq -r '.commits[] | "commit "+.oid' | grep -c "commit")
 echo $count
 count=$((count+1))
 echo $count
