@@ -1,6 +1,6 @@
-PR_NUM=$(git log origin/main -1 --pretty=format:"%s" | cut -d "#" -f 2 | cut -d " " -f 1)
+PR_NUM=$(git log origin/main --pretty=format:"%s" | grep "Merge pull request" | cut -d "#" -f 2 | cut -d " " -f 1 | head -1)
 echo $PR_NUM
-count=$(gh pr view 24 --json commits | jq -r '.commits[] | "commit "+.oid' | grep -c "commit")
+count=$(gh pr view 27 --json commits | jq -r '.commits[] | "commit "+.oid' | grep -c "commit")
 echo $count
 count=$((count+1))
 echo $count
