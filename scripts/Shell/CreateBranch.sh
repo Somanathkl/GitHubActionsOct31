@@ -1,4 +1,4 @@
-PR_NUM=$(git log main -1 --pretty=format:"%s" | cut -d "#" -f 2 | cut -d " " -f 1)
+PR_NUM=$(git log origin/main -1 --pretty=format:"%s" | cut -d "#" -f 2 | cut -d " " -f 1)
 count=$(gh pr view $PR_NUM --json commits | jq -r '.commits[] | "commit "+.oid' | grep -c "commit")
 count=$((count+1))
 commit=$(git log -n $count --skip 1 --pretty=format:"%H" | tail -1)
