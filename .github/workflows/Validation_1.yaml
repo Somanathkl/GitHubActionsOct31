@@ -139,7 +139,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           pwd
-          ls
+          ls package/
           count=$(cat package/package.xml | grep -c "<types>")
           echo $count
           if [ ! $count ]
