@@ -48,6 +48,8 @@ jobs:
             echo $(git diff --name-only --diff-filter=D origin/main HEAD | grep 'force-app' > delta-destructive-sf.txt)
 
       - name: Get Delta Files for Merge
+        env:
+          GH_TOKEN: "${{ secrets.GH_PAT }}"
         if: github.event_name != 'pull_request'
         run: |
             last_successful_commit=$(gh run list --status "Success" -e "pull_request" --json headSha,conclusion | jq -r '.[] | select(.conclusion == "success") | .headsha' | head -1)
