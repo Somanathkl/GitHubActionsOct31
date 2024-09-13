@@ -145,11 +145,11 @@ jobs:
         run: |
           count=$(cat package/package.xml | grep -c "<types>") || true
           echo $count
-          if [ ! $count ];
+          if [ $count -ne 0 ];
           then
             countd=$(cat package/destructiveChanges.xml | grep -c "<types>") || true
             echo $countd
-            if [ ! $countd ];
+            if [ $countd -ne 0 ];
             then
               sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com" --post-destructive-changes package/destructiveChanges.xml --ignore-warnings
             else
