@@ -89,10 +89,16 @@ jobs:
             path: package/*
       - name: Display Delta Package
         run: |
-            echo "--------------Package XML------------------"
-            cat package/package.xml
-            echo "--------------Destructive Changes XML------------------"
-            cat package/destructiveChanges.xml
+            if [ -s "package/package.xml" ];
+            then
+              echo "--------------Package XML------------------"
+              cat package/package.xml
+            fi
+            if [ -s "package/destructiveChanges.xml" ];
+            then
+              echo "--------------Destructive Changes XML------------------"
+              cat package/destructiveChanges.xml
+            fi
 
   SF-VALIDATION-DEPLOYMENT:
     name: Validation/Deployment
