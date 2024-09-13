@@ -50,8 +50,11 @@ jobs:
       - name: Get Delta Files for Merge
         if: github.event_name != 'pull_request'
         run: |
-            echo $(git diff --name-only --diff-filter=d HEAD^ HEAD | grep 'force-app' > delta-salesforce.txt)
-            echo $(git diff --name-only --diff-filter=D HEAD^ HEAD | grep 'force-app' > delta-destructive-sf.txt)
+            last-successful-commit=$(gh run list --status "Success" -e "pull_request" --json headSha,conclusion | jq -r '.[] | select(.conclusion == "success") | .headsha' | head -1)
+            echo $last-successful-commit
+            echo " "
+            echo $(git diff --name-only --diff-filter=d HEAD last-successful-commit | grep 'force-app' > delta-salesforce.txt)
+            echo $(git diff --name-only --diff-filter=D HEAD last-successful-commit | grep 'force-app' > delta-destructive-sf.txt)
 
       - name: Generate Delta Package
         run: |
@@ -81,6 +84,8 @@ jobs:
               </Package>" > package/destructiveChanges.xml
             fi
       - name: Generate Destructive Delta for Merge PR
+        env:
+          GH_TOKEN: "${{ secrets.GH_PAT }}"
         if: github.event_name != 'pull_request'
         run: |
             if [ -s "delta-destructive-sf.txt" ];
