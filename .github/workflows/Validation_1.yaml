@@ -55,33 +55,33 @@ jobs:
 
       - name: Generate Delta Package
         run: |
-            sh scripts/Shell/deltaPackage.sh
-            cat package/package.xml
+            if [ -s "delta-salesforce.txt" ];
+            then
+              sh scripts/Shell/deltaPackage.sh
+              cat package/package.xml
+            else
+              echo "No Diff Found Please check your changes again"
+            fi
       - name: Destructive for PR
         env:
           GH_TOKEN: "${{ secrets.GH_PAT }}"
         if: github.event_name == 'pull_request'
         run: |
-          sh scripts/Shell/destructiveChanges.sh "TargetBranchPath"
-      - name: Create Destructive Branch
-        env:
-          GH_TOKEN: "${{ secrets.GH_PAT }}"
-        if: github.event_name != 'pull_request'
-        run: |
-            sh scripts/Shell/CreateBranch.sh
-      - name: Checkout Destructive Branch
-        if: github.event_name != 'pull_request'
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          ref: DestructiveBranch12
-          path: DestructiveMerge
-          token: "${{ secrets.GH_PAT }}"
+            if [ -s "delta-destructive-sf.txt" ];
+            then
+              sh scripts/Shell/destructiveChanges.sh "TargetBranchPath"
+            else
+              echo "No Diff Found Please check your changes again"
+            fi
       - name: Generate Destructive Delta for Merge PR
         if: github.event_name != 'pull_request'
-        run:
-            sh scripts/Shell/destructiveMergePR.sh "DestructiveMerge"
-
+        run: |
+            if [ -s "delta-destructive-sf.txt" ];
+            then
+              sh scripts/Shell/destructiveMerge.sh
+            else
+              echo "No Diff Found Please check your changes again"
+            fi
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
