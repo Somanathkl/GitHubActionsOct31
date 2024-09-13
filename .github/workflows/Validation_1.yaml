@@ -52,9 +52,8 @@ jobs:
           GH_TOKEN: "${{ secrets.GH_PAT }}"
         if: github.event_name != 'pull_request'
         run: |
-            last_successful_commit=$(gh run list --status "Success" -e "pull_request" --json headSha,conclusion | jq -r '.[] | select(.conclusion == "success") | .headsha' | head -1)
+            last_successful_commit=$(gh run list --status "Success" -e "pull_request" --json headSha,conclusion | jq -r '.[] | select(.conclusion == "success") | .headSha' | head -1)
             echo $last_successful_commit
-            echo " "
             echo $(git diff --name-only --diff-filter=d HEAD $last_successful_commit | grep 'force-app' > delta-salesforce.txt)
             echo $(git diff --name-only --diff-filter=D HEAD $last_successful_commit | grep 'force-app' > delta-destructive-sf.txt)
 
