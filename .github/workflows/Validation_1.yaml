@@ -138,9 +138,11 @@ jobs:
       - name: Validate for Pull Request
         if: github.event_name == 'pull_request'
         run: |
-          if [ -s "package/package.xml" ]
+          count=$(cat package/package.xml | grep -c "<types>")
+          if [ ! $count ]
           then
-            if [ -s "package/destructiveChanges.xml" ];
+            countd=$(cat package/destructiveChanges.xml | grep -c "<types>")
+            if [ ! $countd ];
             then
               sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com" --post-destructive-changes package/destructiveChanges.xml --ignore-warnings
             else
@@ -153,9 +155,11 @@ jobs:
       - name:  Deploy-on-merge
         if: github.event_name == 'push'
         run: |
-          if [ -s "package/package.xml" ]
+          count=$(cat package/package.xml | grep -c "<types>")
+          if [ ! $count ]
           then
-            if [ -s "package/destructiveChanges.xml" ];
+            countd=$(cat package/destructiveChanges.xml | grep -c "<types>")
+            if [ ! $countd ];
             then
               sf project deploy start -x package/package.xml -l NoTestRun --target-org "lsomanath12@deloitte.com" --post-destructive-changes package/destructiveChanges.xml --ignore-warnings
             else
