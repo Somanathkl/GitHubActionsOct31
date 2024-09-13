@@ -138,11 +138,9 @@ jobs:
       - name: Validate for Pull Request
         if: github.event_name == 'pull_request'
         run: |
-          cat package/package.xml
-          cat package/package.xml | grep -c "<types>"
           count=$(cat package/package.xml | grep -c "<types>")
           echo $count
-          if [ ! $count ]
+          if [ ! $count ];
           then
             countd=$(cat package/destructiveChanges.xml | grep -c "<types>")
             echo $countd
@@ -160,7 +158,7 @@ jobs:
         if: github.event_name == 'push'
         run: |
           count=$(cat package/package.xml | grep -c "<types>")
-          if [ ! $count ]
+          if [ ! $count ];
           then
             countd=$(cat package/destructiveChanges.xml | grep -c "<types>")
             if [ ! $countd ];
