@@ -60,7 +60,11 @@ jobs:
               sh scripts/Shell/deltaPackage.sh
               cat package/package.xml
             else
-              echo "No Diff Found Please check your changes again"
+              mkdir package
+              echo "<?xml version="1.0" encoding="UTF-8"?>
+              <Package xmlns="http://soap.sforce.com/2006/04/metadata">
+                  <version>59.0</version>
+              </Package>" > package/package.xml
             fi
       - name: Destructive for PR
         env:
@@ -71,7 +75,10 @@ jobs:
             then
               sh scripts/Shell/destructiveChanges.sh "TargetBranchPath"
             else
-              echo "No Diff Found Please check your changes again"
+              echo "<?xml version="1.0" encoding="UTF-8"?>
+              <Package xmlns="http://soap.sforce.com/2006/04/metadata">
+                  <version>59.0</version>
+              </Package>" > package/destructiveChanges.xml
             fi
       - name: Generate Destructive Delta for Merge PR
         if: github.event_name != 'pull_request'
@@ -80,7 +87,10 @@ jobs:
             then
               sh scripts/Shell/destructiveMerge.sh
             else
-              echo "No Diff Found Please check your changes again"
+              echo "<?xml version="1.0" encoding="UTF-8"?>
+              <Package xmlns="http://soap.sforce.com/2006/04/metadata">
+                  <version>59.0</version>
+              </Package>" > package/destructiveChanges.xml
             fi
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
