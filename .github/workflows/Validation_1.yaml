@@ -138,8 +138,8 @@ jobs:
       - name: Validate for Pull Request
         if: github.event_name == 'pull_request'
         run: |
-          pwd
-          ls package/
+          cat package/package.xml
+          cat package/package.xml | grep -c "<types>"
           count=$(cat package/package.xml | grep -c "<types>")
           echo $count
           if [ ! $count ]
