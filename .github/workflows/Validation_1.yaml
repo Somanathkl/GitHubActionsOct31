@@ -128,10 +128,20 @@ jobs:
       - name: Validate for Pull Request
         if: github.event_name == 'pull_request'
         run: |
-          sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com" --post-destructive-changes package/destructiveChanges.xml --ignore-warnings
+          if [ -s "package/destructiveChanges.xml" ];
+          then
+            sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com" --post-destructive-changes package/destructiveChanges.xml --ignore-warnings
+          else
+            sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com"
+          fi
 
       - name:  Deploy-on-merge
         if: github.event_name == 'push'
         run: |
+          if [ -s "package/destructiveChanges.xml" ];
+          then
             sf project deploy start -x package/package.xml -l NoTestRun --target-org "lsomanath12@deloitte.com" --post-destructive-changes package/destructiveChanges.xml --ignore-warnings
+          else
+            sf project deploy start -x package/package.xml -l NoTestRun --target-org "lsomanath12@deloitte.com"
+          fi
 
