@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:        
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version: '20'
 
       - name: Install Salesforce CLI
         run: |
@@ -48,40 +48,56 @@ jobs:
             echo $(git diff --name-only --diff-filter=D origin/main HEAD | grep 'force-app' > delta-destructive-sf.txt)
 
       - name: Get Delta Files for Merge
+        env:
+          GH_TOKEN: "${{ secrets.GH_PAT }}"
         if: github.event_name != 'pull_request'
         run: |
-            echo $(git diff --name-only --diff-filter=d HEAD^ HEAD | grep 'force-app' > delta-salesforce.txt)
-            echo $(git diff --name-only --diff-filter=D HEAD^ HEAD | grep 'force-app' > delta-destructive-sf.txt)
+            last_successful_commit=$(gh run list --status "Success" -e "push" --json headSha,conclusion | jq -r '.[] | select(.conclusion == "success") | .headSha' | head -1)
+            echo $last_successful_commit
+            echo $(git diff --name-only --diff-filter=d $last_successful_commit HEAD | grep 'force-app' > delta-salesforce.txt)
+            echo $(git diff --name-only --diff-filter=D $last_successful_commit HEAD | grep 'force-app' > delta-destructive-sf.txt)
 
       - name: Generate Delta Package
         run: |
-            sh scripts/Shell/deltaPackage.sh
-            cat package/package.xml
+            if [ -s "delta-salesforce.txt" ];
+            then
+              sh scripts/Shell/deltaPackage.sh
+              cat package/package.xml
+            else
+              mkdir package
+              echo "<?xml version="1.0" encoding="UTF-8"?>
+              <Package xmlns="http://soap.sforce.com/2006/04/metadata">
+                  <version>59.0</version>
+              </Package>" > package/package.xml
+            fi
       - name: Destructive for PR
         env:
           GH_TOKEN: "${{ secrets.GH_PAT }}"
         if: github.event_name == 'pull_request'
         run: |
-          sh scripts/Shell/destructiveChanges.sh "TargetBranchPath"
-      - name: Create Destructive Branch
+            if [ -s "delta-destructive-sf.txt" ];
+            then
+              sh scripts/Shell/destructiveChanges.sh "TargetBranchPath"
+            else
+              echo "<?xml version="1.0" encoding="UTF-8"?>
+              <Package xmlns="http://soap.sforce.com/2006/04/metadata">
+                  <version>59.0</version>
+              </Package>" > package/destructiveChanges.xml
+            fi
+      - name: Generate Destructive Delta for Merge PR
         env:
           GH_TOKEN: "${{ secrets.GH_PAT }}"
         if: github.event_name != 'pull_request'
         run: |
-            sh scripts/Shell/CreateBranch.sh
-      - name: Checkout Destructive Branch
-        if: github.event_name != 'pull_request'
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          ref: DestructiveBranch12
-          path: DestructiveMerge
-          token: "${{ secrets.GH_PAT }}"
-      - name: Generate Destructive Delta for Merge PR
-        if: github.event_name != 'pull_request'
-        run:
-            sh scripts/Shell/destructiveMergePR.sh "DestructiveMerge"
-
+            if [ -s "delta-destructive-sf.txt" ];
+            then
+              sh scripts/Shell/destructiveMerge.sh
+            else
+              echo "<?xml version="1.0" encoding="UTF-8"?>
+              <Package xmlns="http://soap.sforce.com/2006/04/metadata">
+                  <version>59.0</version>
+              </Package>" > package/destructiveChanges.xml
+            fi
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -89,10 +105,16 @@ jobs:
             path: package/*
       - name: Display Delta Package
         run: |
-            echo "--------------Package XML------------------"
-            cat package/package.xml
-            echo "--------------Destructive Changes XML------------------"
-            cat package/destructiveChanges.xml
+            if [ -s "package/package.xml" ];
+            then
+              echo "--------------Package XML------------------"
+              cat package/package.xml
+            fi
+            if [ -s "package/destructiveChanges.xml" ];
+            then
+              echo "--------------Destructive Changes XML------------------"
+              cat package/destructiveChanges.xml
+            fi
 
   SF-VALIDATION-DEPLOYMENT:
     name: Validation/Deployment
@@ -122,10 +144,36 @@ jobs:
       - name: Validate for Pull Request
         if: github.event_name == 'pull_request'
         run: |
-          sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com" --post-destructive-changes package/destructiveChanges.xml --ignore-warnings
+          count=$(cat package/package.xml | grep -c "<types>") || true
+          echo $count
+          if [ $count -ne 0 ];
+          then
+            countd=$(cat package/destructiveChanges.xml | grep -c "<types>") || true
+            echo $countd
+            if [ $countd -ne 0 ];
+            then
+              sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com" --post-destructive-changes package/destructiveChanges.xml --ignore-warnings
+            else
+              sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com"
+            fi
+          else
+            echo "No Source Backed Components Found"
+          fi
 
       - name:  Deploy-on-merge
         if: github.event_name == 'push'
         run: |
-            sf project deploy start -x package/package.xml -l NoTestRun --target-org "lsomanath12@deloitte.com" --post-destructive-changes package/destructiveChanges.xml --ignore-warnings
+          count=$(cat package/package.xml | grep -c "<types>") || true
+          if [ $count -ne 0 ];
+          then
+            countd=$(cat package/destructiveChanges.xml | grep -c "<types>") || true
+            if [ $countd -ne 0 ];
+            then
+              sf project deploy start -x package/package.xml -l NoTestRun --target-org "lsomanath12@deloitte.com" --post-destructive-changes package/destructiveChanges.xml --ignore-warnings
+            else
+              sf project deploy start -x package/package.xml -l NoTestRun --target-org "lsomanath12@deloitte.com"
+            fi
+          else
+            echo "No Source Backed Components Found"
+          fi
 
