@@ -131,7 +131,7 @@ jobs:
 
       - name: Authenticate with DevHub (CI org)
         run: |
-          SFDX_AUTH_URL="force://PlatformCLI::5Aep861sDdjizbO.v6wWFLlMMdrS7H5xSuq2_Zr1WIl43Eqn75jBd0u8AhM2HjFXu08OphqB5YYim2bSHhaoKXV@deloittecom78-dev-ed.develop.my.salesforce.com"
+          SFDX_AUTH_URL="force://PlatformCLI::5Aep861sDdjizbO.v6wWFLlMMdrS7H5xSuq2_Zr1WIl43Eqn75anUBSpjrr2sPp89uZtipzZizqZkRm5i7TDXP3@deloittecom78-dev-ed.develop.my.salesforce.com"
           echo $SFDX_AUTH_URL > auth-url.txt
           sf org login sfdx-url --sfdx-url-file auth-url.txt
 

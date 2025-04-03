@@ -1,6 +1,6 @@
 {
   "orgName": "Demo company",
-  "edition": "Developer",
+  "sourceOrg": "00D5h000008MOBn",
   "features": ["EnableSetPasswordInApi"],
   "settings": {
     "lightningExperienceSettings": {
