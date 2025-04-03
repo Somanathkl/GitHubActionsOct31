@@ -144,14 +144,18 @@ jobs:
       - name: Validate for Pull Request
         if: github.event_name == 'pull_request'
         run: |
+          echo "Package.xml...................................."
           cat package/package.xml
+          echo "Package.xml.................................... END"
           count=$(cat package/package.xml | grep -c "<types>") || true
-          echo $count
+          echo "count: "$count
           if [ $count -ne 0 ];
           then
+            echo " Destructive Package.xml...................................."
             cat package/destructiveChanges.xml
+            echo " Destructive Package.xml.................................... END"
             countd=$(cat package/destructiveChanges.xml | grep -c "<types>") || true
-            echo $countd
+            echo "countd: "$countd
             if [ $countd -ne 0 ];
             then
               sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com" --post-destructive-changes package/destructiveChanges.xml --ignore-warnings
