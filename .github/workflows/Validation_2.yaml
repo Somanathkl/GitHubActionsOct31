@@ -195,6 +195,31 @@ jobs:
       with:
           name: pmd_report
           path: pmd_report_combined.csv
+    - name: Check for Apex Class Changes
+      id: apex_check
+      run: |
+          # Check if any Apex class was changed in the package
+          if grep -q '<name>ApexClass</name>' package/package.xml; then
+            echo "apex_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "apex_changed=false" >> $GITHUB_OUTPUT
+          fi
+    - name: Extract Test Classes from PR Description
+      id: extract_tests
+      if: steps.apex_check.outputs.apex_changed == 'true'
+      run: |
+          DESC="${{ github.event.pull_request.body }}"
+          # Extract after 'Test Classes:' (case-insensitive, up to end of line or period)
+          RAW_CLASSES=$(echo "$DESC" | awk 'BEGIN{IGNORECASE=1} match($0, /test classes:[ ]*([^.\n]*)/, arr) {print arr[1]}' | head -1)
+          # Replace commas with spaces, squeeze multiple spaces to one, trim
+          TEST_CLASSES=$(echo "$RAW_CLASSES" | tr ',' ' ' | xargs)
+          TEST_FLAGS=""
+          if [ -n "$TEST_CLASSES" ]; then
+            for t in $TEST_CLASSES; do
+              TEST_FLAGS="$TEST_FLAGS --tests $t"
+            done
+          fi
+          echo "test_flags=$TEST_FLAGS" >> $GITHUB_OUTPUT
     - name: 'Validate with Specified Tests'
       if: steps.apex_check.outputs.apex_changed == 'true' && steps.extract_tests.outputs.test_flags != ''
       run: |
