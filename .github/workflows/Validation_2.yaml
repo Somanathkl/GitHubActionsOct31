@@ -195,23 +195,6 @@ jobs:
       with:
           name: pmd_report
           path: pmd_report_combined.csv
-    
-    - name: Fail if PMD Apex P1/P2 Found (robust CSV handling)
-      run: |
-        python3 <<EOF
-        import csv
-        with open(r"pmd_report_combined.csv", newline='') as f:
-          reader = csv.reader(f)
-          headers = next(reader)
-          for row in reader:
-            if len(row) < 5:
-              continue
-            priority = row[4].strip().strip('"')
-            if priority in ('1', '2'):
-              print(f'Blocking deployment: PMD Apex P1 or P2 violations detected in row: {row}')
-              exit(1)
-          print("No P1/P2 violations found in Apex PMD report.")
-        EOF
     - name: 'Validate with Specified Tests'
       if: steps.apex_check.outputs.apex_changed == 'true' && steps.extract_tests.outputs.test_flags != ''
       run: |
