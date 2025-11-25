@@ -1,0 +1,357 @@
+
+name: Texas PR Validation
+
+on:
+  pull_request:
+    types:  [ opened,reopened,synchronize ]
+    paths:
+       - "force-app/**"  
+       
+jobs:
+  usingsfdx:
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Checkout source code'
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 200
+        
+    - name: Git Log
+      run: |
+          git log --oneline
+           
+
+    - name: 'Set up JDK 1.8'
+      uses: actions/setup-java@v3
+      with:
+         java-version: '17'
+         distribution: 'zulu'
+
+    
+    - name: 'Install SFDX'
+      run: |
+          npm install @salesforce/cli --global
+
+    - name: Install SGD
+      run: |
+          echo y | sfdx plugins:install sfdx-git-delta
+          pwd
+          git config --global --add safe.directory /home/runner/work/Uber
+             
+    - name: Building Package SGD
+      run: |
+          sfdx sgd:source:delta --to "HEAD" --from "67caea42123f317e5a082fa2f1051c3fe8ed3fa9" --output-dir "." --source-dir force-app/
+          
+    - name: Package
+      run: |
+          echo " ------ Package ------"
+          cat package/package.xml
+          echo " ---------------------"
+          echo "                       "
+          echo " ------ Destructive Package------"
+          cat destructiveChanges/destructiveChanges.xml
+          echo "---------------------------------"
+
+
+    - name: sfdx authorization 
+      run: |
+          SFDX_AUTH_URL="force://PlatformCLI::5Aep861sDdjizbO.v6wWFLlMMdrS7H5xSuq2_Zr1WIl43Eqn75anUBSpjrr2sPp89uZtipzZizqZkRm5i7TDXP3@deloittecom78-dev-ed.develop.my.salesforce.com"
+          echo $SFDX_AUTH_URL > auth-url.txt
+          sf org login sfdx-url --sfdx-url-file auth-url.txt
+          
+    - name: Install PMD and Show Directory/Contents
+      run: |
+          wget -O pmd-bin-6.55.0.zip https://github.com/pmd/pmd/releases/download/pmd_releases%2F6.55.0/pmd-bin-6.55.0.zip
+          unzip -q pmd-bin-6.55.0.zip
+          echo "After unzip, directory contents:"
+          ls -al
+          echo "List contents of pmd-bin-6.55.0/bin:"
+          ls -al pmd-bin-6.55.0/bin/
+ 
+    - name: Robustly parse package.xml for PMD and ESLint scan
+      id: find_delta
+      run: |
+          set -e
+          echo '--- SHOW package.xml ---'
+          cat package/package.xml
+          echo '--- END package.xml ---'
+              awk '
+                BEGIN { inTypes=0; members_count=0; typeName="" }
+                /<types>/                    { inTypes=1; members_count=0; typeName="" }
+                /<\/types>/                  {
+                                                if (typeName == "ApexClass" || typeName == "ApexTrigger" || typeName == "LightningComponentBundle" || typeName == "ApexComponent") {
+                                                    for (i=0; i<members_count; i++) print typeName "|" members[i]
+                                                }
+                                                inTypes=0
+                                            }
+                inTypes && /<members>/       {
+                                                match($0, /<members>([^<]*)<\/members>/, arr)
+                                                if (arr[1] != "") members[members_count++] = arr[1]
+                                            }
+                inTypes && /<name>/          {
+                                                match($0, /<name>([^<]*)<\/name>/, arr)
+                                                if (arr[1] != "") typeName=arr[1]
+                                            }
+              ' package/package.xml > package_members.txt
+ 
+          > delta_all_files.txt
+ 
+          while IFS='|' read type name; do
+            case "$type" in
+              ApexClass)
+                find ./force-app/main/default/classes -type f -name "$name.cls" 2>/dev/null | tee -a delta_all_files.txt
+                ;;
+              ApexTrigger)
+                find ./force-app/main/default/triggers -type f -name "$name.trigger" 2>/dev/null | tee -a delta_all_files.txt
+                ;;
+              LightningComponentBundle)
+                if [ -d "./force-app/main/default/lwc/$name" ]; then
+                  find "./force-app/main/default/lwc/$name" -type f {{{{\( -name "*.js" -o -name "*.html" -o -name "*.css" -o -name "*.xml" \)}}}} 2>/dev/null | tee -a delta_all_files.txt
+                else
+                  echo "LWC folder not found for $name"
+                fi
+                ;;
+              ApexComponent)
+                find ./force-app/main/default/components -type f -name "$name.component" 2>/dev/null | tee -a delta_all_files.txt
+                ;;
+            esac
+          done < package_members.txt
+ 
+          echo "--- SHOW parsed type|member from package.xml ---"
+          cat package_members.txt
+          echo "--- END parsed type|member ---"
+ 
+          sort -u delta_all_files.txt -o delta_all_files.txt
+          sed -i '/^$/d' delta_all_files.txt
+ 
+          echo "Delta files ready for scanning:"
+          cat delta_all_files.txt
+ 
+          while IFS='|' read type name; do
+            case "$type" in
+              ApexClass)
+                find ./force-app/main/default/classes -type f -name "$name.cls" 2>/dev/null | tee -a delta_all_files.txt
+                ;;
+              ApexTrigger)
+                find ./force-app/main/default/triggers -type f -name "$name.trigger" 2>/dev/null | tee -a delta_all_files.txt
+                ;;
+              LightningComponentBundle)
+                if [ -d "./force-app/main/default/lwc/$name" ]; then
+                  find "./force-app/main/default/lwc/$name" -type f \( -name "*.js" -o -name "*.html" -o -name "*.css" -o -name "*.xml" \) 2>/dev/null | tee -a delta_all_files.txt
+                else
+                  echo "LWC folder not found for $name"
+                fi
+                ;;
+              ApexComponent)
+                find ./force-app/main/default/components -type f -name "$name.component" 2>/dev/null | tee -a delta_all_files.txt
+                ;;
+            esac
+          done < package_members.txt
+          sort -u delta_all_files.txt -o delta_all_files.txt
+          sed -i '/^$/d' delta_all_files.txt
+          echo "==== List of files found in package.xml and present in repository that will be scanned by PMD ===="
+          cat delta_all_files.txt || echo "No candidate files found"
+          echo "============================================================================"
+ 
+    - name: Run PMD Scan for Apex
+      run: |
+          ROOT_DIR=$(pwd)
+          PMD_RUNNER="$ROOT_DIR/pmd-bin-6.55.0/bin/run.sh"
+          PMD_CMD="$PMD_RUNNER pmd"
+ 
+          mkdir -p pmd_reports
+ 
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            ext="${file##*.}"
+            base=$(basename "$file")
+            out="pmd_reports/${base}.csv"
+ 
+            case "$ext" in
+              "cls"|"trigger")
+                $PMD_CMD -d "$file" \
+                  -R rulesets/apex/quickstart.xml \
+                  -f csv -r "$out" || true
+                ;;
+              *)
+                echo "Skipping unsupported file for PMD: $file"
+                ;;
+            esac
+ 
+          done < delta_all_files.txt
+ 
+          # Merge CSVs or produce header if none
+          if ls pmd_reports/*.csv 1> /dev/null 2>&1; then
+            # force add our preferred header even if source headers slightly vary
+            echo "filename,problem,line,column,priority,description" > pmd_report_combined.csv
+            tail -n +2 -q pmd_reports/*.csv >> pmd_report_combined.csv
+          else
+            echo "filename,problem,line,column,priority,description" > pmd_report_combined.csv
+          fi
+ 
+    - name: Setup ESLint (Classic)
+      run: |
+          npm install --save-dev eslint@9 @lwc/eslint-plugin-lwc@3.3.0
+          if [ ! -f .eslintrc.json ]; then
+            cat <<'EOF'> .eslintrc.json
+          {
+            "extends": [
+              "eslint:recommended",
+              "plugin:lwc/recommended"
+            ],
+            "plugins": [
+              "lwc"
+            ],
+            "env": {
+              "browser": true,
+              "es2021": true
+            },
+            "parserOptions": {
+              "ecmaVersion": 2021,
+              "sourceType": "module"
+            },
+            "rules": {
+              "no-console": "warn"
+            }
+          }
+          EOF
+          fi
+ 
+    - name: Run ESLint on LWC JS Files
+      run: |
+          mkdir -p eslint_reports
+          jq_installed=$(which jq || true)
+          if [[ -z "$jq_installed" ]]; then
+            sudo apt-get update && sudo apt-get install -y jq
+          fi
+ 
+          # Use normalized, human-friendly header!
+          echo "filename,priority,description,line,column,rule" > eslint_report_combined.csv
+ 
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            ext="${file##*.}"
+            base=$(basename "$file")
+            out="eslint_reports/${base}.json"
+ 
+            # Only lint JS files in LWC bundles
+            if [[ "$ext" == "js" && "$file" == *"/lwc/"* ]]; then
+              npx eslint "$file" -f json -o "$out" || true
+              if [[ -s "$out" ]]; then
+                jq -r '.[] | select(.messages != null) | .filePath as $f | .messages[]? |
+                  [$f, .severity, .message, .line, .column, .ruleId // "NO_RULE"] | @csv' "$out" | sed 's/\\\\\\"/"/g' >> eslint_report_combined.csv
+              fi
+            else
+              echo "Skipping non-LWC or non-JS file for ESLint: $file"
+            fi
+          done < delta_all_files.txt
+ 
+    - name: Upload PMD CSV Output
+      uses: actions/upload-artifact@v4
+      with:
+          name: pmd_report
+          path: pmd_report_combined.csv
+ 
+    - name: Upload ESLint CSV Output
+      uses: actions/upload-artifact@v4
+      with:
+          name: eslint_report
+          path: eslint_report_combined.csv
+    
+    - name: Fail if PMD Apex P1/P2 Found (robust CSV handling)
+      run: |
+        python3 <<EOF
+        import csv
+        with open(r"pmd_report_combined.csv", newline='') as f:
+          reader = csv.reader(f)
+          headers = next(reader)
+          for row in reader:
+            if len(row) < 5:
+              continue
+            priority = row[4].strip().strip('"')
+            if priority in ('1', '2'):
+              print(f'Blocking deployment: PMD Apex P1 or P2 violations detected in row: {row}')
+              exit(1)
+          print("No P1/P2 violations found in Apex PMD report.")
+        EOF
+
+    - name: Fail if ESLint JS P1/P2 Found (robust CSV handling)
+      run: |
+         python3 <<EOF
+         import csv
+         with open(r"eslint_report_combined.csv", newline='') as f:
+           reader = csv.reader(f)
+           headers = next(reader)
+           for row in reader:
+              if len(row) < 2:
+                continue
+              priority = row[1].strip().strip('"')
+              if priority in ('1', '2'):
+                print(f'Blocking deployment: ESLint JS P1 or P2 violations detected in row: {row}')
+                exit(1)
+           print("No P1/P2 violations found in ESLint JS report.")
+         EOF
+    
+    - name: Check for Apex Class Changes
+      id: apex_check
+      run: |
+          # Check if any Apex class was changed in the package
+          if grep -q '<name>ApexClass</name>' package/package.xml; then
+            echo "apex_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "apex_changed=false" >> $GITHUB_OUTPUT
+          fi
+    - name: Extract Test Classes from PR Description
+      id: extract_tests
+      if: steps.apex_check.outputs.apex_changed == 'true'
+      run: |
+          DESC="${{ github.event.pull_request.body }}"
+          # Extract after 'Test Classes:' (case-insensitive, up to end of line or period)
+          RAW_CLASSES=$(echo "$DESC" | awk 'BEGIN{IGNORECASE=1} match($0, /test classes:[ ]*([^.\n]*)/, arr) {print arr[1]}' | head -1)
+          # Replace commas with spaces, squeeze multiple spaces to one, trim
+          TEST_CLASSES=$(echo "$RAW_CLASSES" | tr ',' ' ' | xargs)
+          TEST_FLAGS=""
+          if [ -n "$TEST_CLASSES" ]; then
+            for t in $TEST_CLASSES; do
+              TEST_FLAGS="$TEST_FLAGS --tests $t"
+            done
+          fi
+          echo "test_flags=$TEST_FLAGS" >> $GITHUB_OUTPUT
+
+    - name: 'Validate with Specified Tests'
+      if: steps.apex_check.outputs.apex_changed == 'true' && steps.extract_tests.outputs.test_flags != ''
+      run: |
+          echo "Running validation with specified test classes: ${{ steps.extract_tests.outputs.test_flags }}"
+          sf project deploy start -x package/package.xml -o lsomanath12@deloitte.com --test-level RunSpecifiedTests ${{ steps.extract_tests.outputs.test_flags }} --coverage-formatters json-summary --dry-run
+          coveragepercent=$(cat coverage/coverage/coverage-summary.json | jq -r '.total | .lines | .pct')
+          coverageint=${coveragepercent%%.*}
+          echo $coverageint
+          if [[ $coverageint -lt 85 ]]; then
+              echo "Code Coverage is less than 85"
+              exit 1
+          else
+              echo "Code Coverage is greater than 85"
+          fi
+
+    - name: 'Validate with No Test Classes'
+      if: steps.apex_check.outputs.apex_changed == 'true' && steps.extract_tests.outputs.test_flags == ''
+      run: |
+          echo "No test classes specified. Proceeding with deployment without test run."
+          sf project deploy start -x package/package.xml -o lsomanath12@deloitte.com --dry-run --test-level NoTestRun  
+          
+    - name: 'Validate Destructive Changes'
+      run: |
+          if [ -f destructiveChanges/destructiveChanges.xml ] && { grep -q '<types>' destructiveChanges/destructiveChanges.xml || grep -q '<members>' destructiveChanges/destructiveChanges.xml; }; then
+            echo "Validating destructive changes package..."
+            sf project deploy start --dry-run --manifest package/package.xml --post-destructive-changes destructiveChanges/destructiveChanges.xml --purge-on-delete -l NoTestRun --target-org lsomanath12@deloitte.com --ignore-warnings --ignore-conflicts --wait 60 --verbose --json
+          else
+            echo "No valid entries found. Skipping Validation!!"
+          fi   
+          
+    - name: 'Validate (No Apex Changes)'
+      if: steps.apex_check.outputs.apex_changed != 'true'
+      run: |
+          if [ -f destructiveChanges/destructiveChanges.xml ] && { ! grep -q '<types>' destructiveChanges/destructiveChanges.xml || ! grep -q '<members>' destructiveChanges/destructiveChanges.xml; }; then
+            echo "No Apex class changes detected. Running standard validation."
+            sf project deploy start -x package/package.xml -o lsomanath12@deloitte.com --dry-run
+          fi
