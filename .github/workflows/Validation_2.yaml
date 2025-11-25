@@ -1,5 +1,5 @@
 
-name: Texas PR Validation
+name: Texas PR Validation-test
 
 on:
   pull_request:
