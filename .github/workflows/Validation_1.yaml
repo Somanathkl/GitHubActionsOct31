@@ -144,19 +144,26 @@ jobs:
       - name: Validate for Pull Request
         if: github.event_name == 'pull_request'
         run: |
+          echo "Package.xml...................................."
+          ls
+          echo "list"
+          cat package/package.xml
+          echo "Package.xml.................................... END"
           count=$(cat package/package.xml | grep -c "<types>") || true
-          echo $count
-          if [ $count -ne 0 ];
+          echo "count: "$count
+          echo " Destructive Package.xml...................................."
+          cat package/destructiveChanges.xml
+          echo " Destructive Package.xml.................................... END"
+          countd=$(cat package/destructiveChanges.xml | grep -c "<types>") || true
+          echo "countd: "$countd
+          if [ $countd -ne 0 ];
           then
-            countd=$(cat package/destructiveChanges.xml | grep -c "<types>") || true
-            echo $countd
-            if [ $countd -ne 0 ];
-            then
-              sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com" --post-destructive-changes package/destructiveChanges.xml --ignore-warnings
-            else
-              sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com"
-            fi
+            sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com" --post-destructive-changes package/destructiveChanges.xml --ignore-warnings
           else
+            sf project deploy start -x package/package.xml -l NoTestRun --dry-run --target-org "lsomanath12@deloitte.com"
+          fi
+          if [ $count -eq 0 ];
+          then
             echo "No Source Backed Components Found"
           fi
 

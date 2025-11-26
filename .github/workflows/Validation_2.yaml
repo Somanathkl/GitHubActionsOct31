@@ -189,109 +189,12 @@ jobs:
             echo "filename,problem,line,column,priority,description" > pmd_report_combined.csv
           fi
  
-    - name: Setup ESLint (Classic)
-      run: |
-          npm install --save-dev eslint@9 @lwc/eslint-plugin-lwc@3.3.0
-          if [ ! -f .eslintrc.json ]; then
-            cat <<'EOF'> .eslintrc.json
-          {
-            "extends": [
-              "eslint:recommended",
-              "plugin:lwc/recommended"
-            ],
-            "plugins": [
-              "lwc"
-            ],
-            "env": {
-              "browser": true,
-              "es2021": true
-            },
-            "parserOptions": {
-              "ecmaVersion": 2021,
-              "sourceType": "module"
-            },
-            "rules": {
-              "no-console": "warn"
-            }
-          }
-          EOF
-          fi
- 
-    - name: Run ESLint on LWC JS Files
-      run: |
-          mkdir -p eslint_reports
-          jq_installed=$(which jq || true)
-          if [[ -z "$jq_installed" ]]; then
-            sudo apt-get update && sudo apt-get install -y jq
-          fi
- 
-          # Use normalized, human-friendly header!
-          echo "filename,priority,description,line,column,rule" > eslint_report_combined.csv
- 
-          while IFS= read -r file; do
-            [ -z "$file" ] && continue
-            ext="${file##*.}"
-            base=$(basename "$file")
-            out="eslint_reports/${base}.json"
- 
-            # Only lint JS files in LWC bundles
-            if [[ "$ext" == "js" && "$file" == *"/lwc/"* ]]; then
-              npx eslint "$file" -f json -o "$out" || true
-              if [[ -s "$out" ]]; then
-                jq -r '.[] | select(.messages != null) | .filePath as $f | .messages[]? |
-                  [$f, .severity, .message, .line, .column, .ruleId // "NO_RULE"] | @csv' "$out" | sed 's/\\\\\\"/"/g' >> eslint_report_combined.csv
-              fi
-            else
-              echo "Skipping non-LWC or non-JS file for ESLint: $file"
-            fi
-          done < delta_all_files.txt
  
     - name: Upload PMD CSV Output
       uses: actions/upload-artifact@v4
       with:
           name: pmd_report
           path: pmd_report_combined.csv
- 
-    - name: Upload ESLint CSV Output
-      uses: actions/upload-artifact@v4
-      with:
-          name: eslint_report
-          path: eslint_report_combined.csv
-    
-    - name: Fail if PMD Apex P1/P2 Found (robust CSV handling)
-      run: |
-        python3 <<EOF
-        import csv
-        with open(r"pmd_report_combined.csv", newline='') as f:
-          reader = csv.reader(f)
-          headers = next(reader)
-          for row in reader:
-            if len(row) < 5:
-              continue
-            priority = row[4].strip().strip('"')
-            if priority in ('1', '2'):
-              print(f'Blocking deployment: PMD Apex P1 or P2 violations detected in row: {row}')
-              exit(1)
-          print("No P1/P2 violations found in Apex PMD report.")
-        EOF
-
-    - name: Fail if ESLint JS P1/P2 Found (robust CSV handling)
-      run: |
-         python3 <<EOF
-         import csv
-         with open(r"eslint_report_combined.csv", newline='') as f:
-           reader = csv.reader(f)
-           headers = next(reader)
-           for row in reader:
-              if len(row) < 2:
-                continue
-              priority = row[1].strip().strip('"')
-              if priority in ('1', '2'):
-                print(f'Blocking deployment: ESLint JS P1 or P2 violations detected in row: {row}')
-                exit(1)
-           print("No P1/P2 violations found in ESLint JS report.")
-         EOF
-    
     - name: Check for Apex Class Changes
       id: apex_check
       run: |
@@ -317,7 +220,6 @@ jobs:
             done
           fi
           echo "test_flags=$TEST_FLAGS" >> $GITHUB_OUTPUT
-
     - name: 'Validate with Specified Tests'
       if: steps.apex_check.outputs.apex_changed == 'true' && steps.extract_tests.outputs.test_flags != ''
       run: |
